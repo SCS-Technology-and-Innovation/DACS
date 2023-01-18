@@ -105,6 +105,9 @@ function drop(event) {
 	return false;
     }
     if (reposition(event.pageX - bb.left)) {
+	// update center (for distance calculations)
+	chosen.elevator.middle =
+	    chosen.elevator.position + chosen.elevator.width / 2;	
 	visualize();
 	chosen.active = false;
     }
@@ -177,6 +180,11 @@ function data(n) {
 	dist.innerHTML = "";
 	total.innerHTML = 0;
     }
+    let row = tb.insertRow(n);
+    let sep = row.insertCell(0);
+    let sl = 'sep' + sc;
+    sep.id = sl;
+    document.getElementById(sl).colSpan = "5";
     sc++; // new stats
 }
 
