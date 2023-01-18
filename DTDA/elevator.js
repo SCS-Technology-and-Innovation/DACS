@@ -1,3 +1,4 @@
+let clicking = true;
 var canvas = document.getElementById('draw');
 var ctx = canvas.getContext('2d'); 
 var cw = canvas.width;
@@ -12,7 +13,6 @@ const bb = canvas.getBoundingClientRect();
 
 let table = document.getElementById("stats");
 
-
 // this stuff changes when the elevator count changes
 let elevators = [];
 let ew = 10; // elevator width
@@ -20,7 +20,7 @@ let eh = 10; // elevator height
 let fs = 5; // font size
 let y = 5; // elevator start height
 let meters = 10; // default distance span
-let sc = 0; // snapshot counter
+let sc = 1; // snapshot counter
 
 ctx.lineWidth = 3;
 let carpet = {};
@@ -64,6 +64,9 @@ function reposition(x) {
 }
 
 function pick(event) {
+    if (!clicking) {
+	return false;
+    }
     let cx = event.pageX - bb.left;
     let cy = event.pageY - bb.top;
     if (inside(cx, cy, carpet)) {
@@ -87,6 +90,9 @@ function pick(event) {
 }
 
 function drag(event) {
+    if (!clicking) {
+	return false;
+    }
     if (reposition(event.pageX - bb.left)) {
 	visualize(); // redraw
 	return true;
@@ -95,6 +101,9 @@ function drag(event) {
 }
 
 function drop(event) {
+    if (!clicking) {
+	return false;
+    }
     if (reposition(event.pageX - bb.left)) {
 	visualize();
 	chosen.active = false;
@@ -124,11 +133,12 @@ function setup(n) {
     // console.log('Sizes: ', ew, margin, fs);
     var x = margin;
     y = margin;
+    let hm = Math.floor(margin / 2);
     let incr = ew + margin;
-    carpet.position = margin;
-    carpet.width = cw - 2 * margin;
-    carpet.top = y + eh + margin;
-    carpet.bottom = ch - margin;
+    carpet.position = hm;
+    carpet.width = cw - 2 * hm;
+    carpet.bottom = ch - hm;
+    carpet.top = y + eh + hm;
     carpet.height = carpet.bottom - carpet.top;
     stand.x = Math.round(cw / 2);
     stand.y = Math.round((carpet.bottom + carpet.top) / 2);
@@ -148,27 +158,33 @@ function setup(n) {
     }
 }
 
+
 function data(n) {
+    let stat = table.getElementsByTagName('tbody');    
+    let tb = stat[0];
+    // populate with the required number of rows
     for (let i = 0; i < n; i++) {
 	let l = i + 1;
-	let row = table.insertRow(l);
-	let label = row.insertCell(0);
-	let count = row.insertCell(1);
-	let dist = row.insertCell(2);
-	let total = row.insertCell(3);
-	label.innerHTML = "Elevator " + (l);
+	let row = tb.insertRow(i);
+	let slabel = row.insertCell(0);	
+	let elabel = row.insertCell(1);	
+	let count = row.insertCell(2);
+	let dist = row.insertCell(3);
+	let total = row.insertCell(4);
+	slabel.innerHTML = 'Simulation ' + sc;
+	elabel.innerHTML = 'Elevator ' + l;
 	count.innerHTML = 0;
 	dist.innerHTML = "";
 	total.innerHTML = 0;
     }
+    sc++; // new stats
 }
 
 function init() {
     var n = parseInt(counter.value);
     meters = n + 3; // assume the whole thing is this meters wide
     setup(n);
-    data(n);
-    visualize();    
+    visualize();
 }
 
 function drawCarpet() {
@@ -232,7 +248,6 @@ function visualize() {
 }
 
 const sim = document.getElementById('sim');
-const res = document.getElementById('reset');
 const repl = document.getElementById('replicas');
 
 // pick an elevator uniformly at random
@@ -249,40 +264,54 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt(dx * dx, dy * dy);
 }
 
-function simulate() {
+function disable() {
     counter.disabled = true;
     spacer.disabled = true;
     repl.disabled = true;
     sim.disabled = true;
-    res.disabled = false;
+    clicking = false;
+}
+
+function enable() {
+    counter.disabled = false;
+    spacer.disabled = false;
+    repl.disabled = false;    
+    sim.disabled = false;
+    clicking = true;
+}
+
+function simulate() {
+    disable()
     let total = parseInt(repl.value);
     // starting location
     let xs = stand.x;
     let ys = stand.y;
+    let n = elevators.length;
+    data(n); // prep the stats table   
+    let stat = table.getElementsByTagName('tbody')[0];
+    // compute distances
+    for (let e = 0; e < n; e++) {
+	let record = stat.rows[e];
+	let xt = elevators[e].middle;
+	let yt = elevators[e].bottom;
+	let dist = meters * distance(xs, ys, xt, yt) / cw;
+	record.cells[3].innerHTML = dist.toFixed(2);
+    }
     for (let r = 0; r < total; r++) {
 	let e = arrival();
 	// record the statistic
-	let record = stats.rows[e + 1];
-	let freq = record.cells[1];
+	let record = stat.rows[e];
+	let freq = record.cells[2];
 	let current = parseInt(freq.innerHTML);
 	freq.innerHTML = current + 1;
-	if (current == 0) { // first time
-	    let d = record.cells[2];	    
-	    // target location
-	    let xt = elevators[e].middle;
-	    let yt = elevators[e].bottom;
-	    let dist = meters * distance(xs, ys, xt, yt) / cw;
-	    d.innerHTML = dist.toFixed(2);
-	}
     }
-    let n = elevators.length;
     let sum = 0;
     for (let e = 0; e < n; e++) {
-	let record = stats.rows[e + 1];
-	let f = parseInt(record.cells[1].innerHTML);
-	let d = parseFloat(record.cells[2].innerHTML);
+	let record = stat.rows[e];
+	let f = parseInt(record.cells[2].innerHTML);
+	let d = parseFloat(record.cells[3].innerHTML);
 	let t = f * d;
-	record.cells[3].innerHTML = t.toFixed(2);
+	record.cells[4].innerHTML = t.toFixed(2);
 	sum += t;
     }
     let avg = sum / total;
@@ -291,14 +320,9 @@ function simulate() {
 	today.getMinutes() + ":" +
 	today.getSeconds();
     let dest = document.getElementById('average');
-    var log = document.createElement('p');    
-    log.innerHTML =
-	'The average in the simulation done at ' + now +
-	' with ' + n + ' elevators was ' + avg.toFixed(2) + ' meters of walking.';
-    dest.appendChild(log);     
     var snapshot = document.createElement('canvas');
     var ssc = snapshot.getContext('2d');
-    snapshot.id = 'c' + sc++;
+    snapshot.id = 'c' + sc;
     snapshot.width = cw;
     snapshot.height = ch;
     ssc.drawImage(canvas, 0, 0); // clone
@@ -306,24 +330,16 @@ function simulate() {
     ssc.font = fs + 'px Courier';        
     ssc.fillStyle = tc; 
     ssc.fillText('Simulation setup at ' + now, fs + 3, fs + 3);
-    dest.appendChild(snapshot);    
+    dest.prepend(snapshot);
+    var log = document.createElement('p');    
+    log.innerHTML =
+	'The average displacement in the ' + total +
+	' replica-simulation with the below setup with ' +
+	n + ' elevators was ' + avg.toFixed(2) + ' meters.';
+    dest.prepend(log);
+    enable()
+    
 }
 
-function reset() {
-    counter.disabled = false;
-    spacer.disabled = false;
-    repl.disabled = false;    
-    sim.disabled = false;
-    res.disabled = true;
-    let n = elevators.length;
-    for (let i = 0; i < n; i++) {
-	let l = i + 1;
-	let row = table.rows[l];
-	row.cells[0].innerHTML = "Elevator " + (l);
-	row.cells[1].innerHTML = 0;
-	row.cells[2].innerHTML = "";
-	row.cells[3].innerHTML = 0;
-    }
-}
 
 init();
