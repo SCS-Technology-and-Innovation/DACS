@@ -1,15 +1,11 @@
 let clicking = true;
-var canvas = document.getElementById('draw');
-var ctx = canvas.getContext('2d'); 
-var cw = canvas.width;
-let ch = canvas.height;
 const gr = (1 + Math.sqrt(5)) / 2; // golden ratio
-const tc = '#ffffff'; // text color 
+
+var canvas = document.getElementById('draw');
+var ctx = canvas.getContext('2d');
 ctx.textAlign = 'center';
-canvas.addEventListener('mousedown', pick, false);
-canvas.addEventListener('mousemove', drag, false);
-canvas.addEventListener('mouseup', drop, false);
-const bb = canvas.getBoundingClientRect();
+const tc = '#ffffff'; // text color 
+let bb = canvas.getBoundingClientRect();
 
 let table = document.getElementById("stats");
 
@@ -30,7 +26,8 @@ carpet.border = '#666666';
 let stand = {};
 stand.color = '#ffffff';
 stand.border = '#dddddd';
-stand.radius = 10; // fixed
+stand.radius = 6; // fixed
+const margin = 6;
 
 // for repositioning
 var chosen = {};
@@ -40,14 +37,15 @@ chosen.active = false;
 function inside(cx, cy, element) {
     let high = element.top;
     if (cy < high) {
-	// console.log('Too high', cy, 'vs', y);
+	console.log('Too high', cy, 'vs', y);
 	return false;
     }
     let low = element.bottom;
     if (cy > low) {
-	// console.log('Too low', cy, 'vs', low);
+	console.log('Too low', cy, 'vs', low);
 	return false;
     }
+    console.log('Inside');
     let start = element.position;
     let end = start + element.width;
     return cx >= start && cx <= end;
@@ -69,14 +67,17 @@ function pick(event) {
     }
     let cx = event.pageX - bb.left;
     let cy = event.pageY - bb.top;
+    console.log('Click', cx, cy);
+    console.log('Carpet?');
     if (inside(cx, cy, carpet)) {
 	let d = stand.radius;
 	stand.x = Math.round(cx);
-	stand.y = Math.round(cy + d);
-	// console.log('Picked a place to stand');
+	stand.y = Math.round(cy + d / 2);
+	console.log('Picked a place to stand');
 	visualize(); // redraw
 	return true;
     }
+    console.log('Elevator?');    
     for (const e of elevators) {
 	if (inside(cx, cy, e)) {
 	    chosen.active = true;
@@ -115,36 +116,36 @@ function drop(event) {
 }
 
 const counter = document.getElementById('count');
-counter.addEventListener('change', init);
 
-const spacer = document.getElementById('space');
-spacer.addEventListener('change', init);
+function roll() { // roll out the carpet
+    carpet.position = margin;
+    carpet.width = canvas.width - 2 * margin;
+    carpet.bottom = canvas.height - margin;
+    carpet.top = y + eh + margin;
+    carpet.height = carpet.bottom - carpet.top;
+    stand.x = Math.round(canvas.width / 2);
+    stand.y = Math.round((carpet.bottom + carpet.top) / 2);
+}
 
-function setup(n) {
+function setup() {
+    var n = parseInt(counter.value);
+    if (elevators.length == n) {
+	console.log('Elevators already set up');
+	return;
+    }
+    // console.log('Setting up', n, 'elevators');
+    meters = n * gr; // assume the whole thing is this meters wide    
     elevators = []; // reset    
-    // max half empty space
-    var space = (100 - parseInt(spacer.value) / 2) / 100;
-    // console.log('Spacing', space);
     var col = palette('tol-rainbow', n);
-    ew = Math.floor(space * cw / n);
-    eh = gr * ew;
-    ch = Math.ceil(1.5 * eh * (1 + space));
-    canvas.height = ch;
-    let margin = Math.floor(((cw - n * ew) / (n + 1)));
-    fs = Math.ceil(ew / 6);
+    ew = Math.floor((canvas.width - (n + 1) * margin) / (2 * n));
+    eh = Math.floor(3 * (canvas.height - 3 * margin) / 4);
+    fs = Math.ceil(2 * Math.sqrt(ew));
     ctx.font = 'bold ' + fs + 'px Courier';    
     // console.log('Sizes: ', ew, margin, fs);
     var x = margin;
     y = margin;
-    let hm = Math.floor(margin / 2);
-    let incr = ew + margin;
-    carpet.position = hm;
-    carpet.width = cw - 2 * hm;
-    carpet.bottom = ch - hm;
-    carpet.top = y + eh + hm;
-    carpet.height = carpet.bottom - carpet.top;
-    stand.x = Math.round(cw / 2);
-    stand.y = Math.round((carpet.bottom + carpet.top) / 2);
+    let incr = ew + Math.floor((canvas.width - 2 * margin - n * ew) / (n - 1));
+    roll();
     for (let i = 0; i < n; i++) {
 	let c = '#' + col[i];
 	let e = {};
@@ -159,8 +160,8 @@ function setup(n) {
 	x += incr;
 	elevators.push(e);
     }
+    visualize();
 }
-
 
 function data(n) {
     let stat = table.getElementsByTagName('tbody');    
@@ -187,14 +188,7 @@ function data(n) {
     document.getElementById(sl).colSpan = "5";
     sc++; // new stats
 }
-
-function init() {
-    var n = parseInt(counter.value);
-    meters = n + 3; // assume the whole thing is this meters wide
-    setup(n);
-    visualize();
-}
-
+    
 function drawCarpet() {
     ctx.fillStyle = carpet.color;
     ctx.strokeStyle = carpet.border;
@@ -222,7 +216,7 @@ function drawStandingSpot() {
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = tc;
-    ctx.fillText('Stand here', x + 2 * r, y);
+    ctx.fillText('Stand here', x + 2 * r, y + r);
 }
 
 function drawElevators() {
@@ -249,7 +243,6 @@ function drawElevators() {
 
 function visualize() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // console.log('Drawing');
     drawCarpet();
     drawStandingSpot();
     drawElevators();
@@ -274,7 +267,6 @@ function distance(x1, y1, x2, y2) {
 
 function disable() {
     counter.disabled = true;
-    spacer.disabled = true;
     repl.disabled = true;
     sim.disabled = true;
     clicking = false;
@@ -282,7 +274,6 @@ function disable() {
 
 function enable() {
     counter.disabled = false;
-    spacer.disabled = false;
     repl.disabled = false;    
     sim.disabled = false;
     clicking = true;
@@ -302,7 +293,7 @@ function simulate() {
 	let record = stat.rows[e];
 	let xt = elevators[e].middle;
 	let yt = elevators[e].bottom;
-	let dist = meters * distance(xs, ys, xt, yt) / cw;
+	let dist = meters * distance(xs, ys, xt, yt) / canvas.width;
 	record.cells[3].innerHTML = dist.toFixed(2);
     }
     for (let r = 0; r < total; r++) {
@@ -331,13 +322,14 @@ function simulate() {
     var snapshot = document.createElement('canvas');
     var ssc = snapshot.getContext('2d');
     snapshot.id = 'c' + sc;
-    snapshot.width = cw;
-    snapshot.height = ch;
+    snapshot.width = canvas.width;
+    snapshot.height = canvas.height;
     ssc.drawImage(canvas, 0, 0); // clone
     // add timestamp
     ssc.font = fs + 'px Courier';        
-    ssc.fillStyle = tc; 
-    ssc.fillText('Simulation setup at ' + now, fs + 3, fs + 3);
+    ssc.fillStyle = '#000000'; 
+    ssc.fillText('Simulation setup at ' + now,
+		 2 * margin, canvas.height - 2 * margin);
     dest.prepend(snapshot);
     var log = document.createElement('p');    
     log.innerHTML =
@@ -349,5 +341,29 @@ function simulate() {
     
 }
 
+function resize() {
+    var ww = window.innerWidth / gr;
+    var wh = window.innerHeight / gr;
+    var wcw = Math.ceil(ww);
+    let wch = Math.ceil(wcw / gr);
+    let hch = Math.ceil(wh);
+    var hcw = Math.ceil(gr * hch);
+    if (wcw < hcw) {
+	canvas.width = wcw;
+	canvas.height = wch;
+    } else {
+	canvas.width = wcw;
+	canvas.height = wch;
+    }
+    bb = canvas.getBoundingClientRect();    
+    setup();
+}
 
-init();
+counter.addEventListener('change', setup);
+canvas.addEventListener('mousedown', pick, false);
+canvas.addEventListener('mousemove', drag, false);
+canvas.addEventListener('mouseup', drop, false);
+window.addEventListener('resize', resize);
+
+resize();
+
