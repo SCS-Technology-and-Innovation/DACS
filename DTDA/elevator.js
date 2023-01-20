@@ -129,10 +129,6 @@ function roll() { // roll out the carpet
 
 function setup() {
     var n = parseInt(counter.value);
-    if (elevators.length == n) {
-	console.log('Elevators already set up');
-	return;
-    }
     // console.log('Setting up', n, 'elevators');
     meters = n * gr; // assume the whole thing is this meters wide    
     elevators = []; // reset    
