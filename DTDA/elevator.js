@@ -72,7 +72,7 @@ function pick(event) {
     if (inside(cx, cy, carpet)) {
 	let d = stand.radius;
 	stand.x = Math.round(cx);
-	stand.y = Math.round(cy + d / 2);
+	stand.y = Math.round(cy);
 	console.log('Picked a place to stand');
 	visualize(); // redraw
 	return true;
@@ -258,7 +258,7 @@ function arrival() {
 function distance(x1, y1, x2, y2) {
     let dx = x1 - x2;
     let dy = y1 - y2;
-    return Math.sqrt(dx * dx, dy * dy);
+    return Math.sqrt(dx * dx + dy * dy);
 }
 
 function disable() {
@@ -290,7 +290,7 @@ function simulate() {
 	let xt = elevators[e].middle;
 	let yt = elevators[e].bottom;
 	let dist = meters * distance(xs, ys, xt, yt) / canvas.width;
-	record.cells[3].innerHTML = dist.toFixed(2);
+	record.cells[3].innerHTML = dist.toFixed(1);
     }
     for (let r = 0; r < total; r++) {
 	let e = arrival();
@@ -306,7 +306,7 @@ function simulate() {
 	let f = parseInt(record.cells[2].innerHTML);
 	let d = parseFloat(record.cells[3].innerHTML);
 	let t = f * d;
-	record.cells[4].innerHTML = t.toFixed(2);
+	record.cells[4].innerHTML = t.toFixed(1);
 	sum += t;
     }
     let avg = sum / total;
@@ -331,7 +331,7 @@ function simulate() {
     log.innerHTML =
 	'The average displacement in the ' + total +
 	' replica-simulation with the below setup with ' +
-	n + ' elevators was ' + avg.toFixed(2) + ' meters.';
+	n + ' elevators was ' + avg.toFixed(1) + ' meters.';
     dest.prepend(log);
     enable()
     
