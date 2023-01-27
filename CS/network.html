@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Connections</title>
+    <style>      
+          canvas {
+              background-color: black;
+          }
+
+          table,
+          td,
+          th {
+              border: 1px solid;
+              padding: 3px;
+          }
+          td {
+              text-align: right;
+          }
+	</style>
+  </head>
+  <body>
+    <h1>It's about who you know.</h1>
+
+    <p>
+      Maximum node count:
+      <input type="number" min="5" step="5" id="count" value="10">
+      <button id="creation" onclick="create()">Create</button>
+    </p>
+    <p>
+      Connection process:
+      <select name="conn" id="conn">
+	<option value="rand">Random</option>
+	<option value="pref">Preferential</option>
+	<option value="max">Maximal</option>
+      </select>
+      Density:
+      <input id="density" type="range" min="0" max="100" step="10"  value="50">
+      <button id="connection" onclick="connect()" disabled>Connect</button>
+      <button id="wipe" onclick="reset()" disabled>Reset</button>
+    </p>
+    <canvas id="draw" width="800" height="0"></canvas>
+    <script src="http://google.github.io/palette.js/palette.js"></script>
+    <script src="network.js"></script>
+  </body>
+</html>
