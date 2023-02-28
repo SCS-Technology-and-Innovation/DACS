@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Coiffeurs</title>
+    <style>      
+          canvas {
+              background-color: black;
+          }
+
+          table,
+          td,
+          th {
+              border: 1px solid;
+              padding: 3px;
+          }
+          td {
+              text-align: right;
+          }
+	</style>
+  </head>
+  <body>
+    <h1>Whose turn is it? Is that someone's client?</h1>
+    <h2>Recommended readings</h2>
+    <p>
+      <ol>
+	<li>PENDING</li>
+      </ol>
+    </p>
+
+    <p>
+      How many coiffeurs work here:
+      <input type="number" min="2" step="1" id="workers" value="3">
+      (assuming everyone is always on shift whenever the shop is open)
+    </p>
+    <p>
+      How many clients do they have:
+      <input type="number" min="10" step="10" id="clients" value="40">
+      (total client pool)
+    </p>
+    
+    <p>
+      How many client arrivals to simulate:
+      <input type="number" min="100" step="100" value="100" id="arrivals">
+      (how many service requests there will be in total; the same
+      client may come several times)
+    </p>
+    <p>
+     <label for="policy">Assign</label>
+
+     <select name="policy" id="policy">
+       <option value="random">an unoccupied coiffeur at random</option>
+       <option value="longest">the unoccupied coiffeur who has waited the longest</option>
+     </select>
+    </p>
+    <p>
+      <label for="retain">Keep the same coiffeur for all subsequent visits</label>
+      <input type="checkbox" id="retain" name="retain" value="">
+    </p>
+    <p>
+      <label for="churn">Churn time</label>
+      <input type="number" min="5" step="5" id="churn" value="15">
+      (after how much waiting will a client leave)
+    </p>
+    <p>
+      <label for="lounge">Capacity of waiting lounge</label>
+      <input type="number" min="0" step="1" id="lounge" value="5">
+      (how many people can stay waiting at any given time)
+    </p>        
+    
+    <p>
+      <button id="sim" onclick="simulate()">Simulate</button>
+    </p>
+    <canvas id="draw" width="800" height="0"></canvas>
+
+    <h2>Statistics</h2>
+
+     <table id="workerstats">
+      <thead>
+	<tr>
+	  <th>Simulation</th>
+	  <th>Worker</th>
+	  <th>Idle time</th>
+	  <th>Clients served</th>
+      </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+
+     <table id="clientstats">
+      <thead>
+	<tr>
+	  <th>Simulation</th>
+	  <th>Clients served</th>	  
+	  <th>Clients lost due to churn</th>
+	  <th>Clients lost due to lounge capacity</th>
+	  <th>Average waiting time</th>
+	  <th>Median waiting time</th>
+	  <th>Maximum waiting time</th>
+      </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+
+    <script src="coiffeur.js"></script>
+  </body>
+</html>
