@@ -38,12 +38,18 @@
       <input type="number" min="10" step="10" id="clients" value="40">
       (total client pool)
     </p>
-    
     <p>
-      How many client arrivals to simulate:
-      <input type="number" min="100" step="100" value="100" id="arrivals">
-      (how many service requests there will be in total; the same
-      client may come several times)
+      Arrival rate: <input type="range" min="1" max="100" value="50" class="slider" id="arrivalrate"> (rate at which clients arrive)
+    </p>
+    <p>
+      Service rate: <input type="range" min="1" max="100" value="50" class="slider" id="servicerate"> (rate at which services are concluded)
+    </p>
+    <p>
+      Simulation speed: <input type="range" min="1" max="100" value="50" class="slider" id="speed"> (how fast time ticks)
+    </p>    
+    <p>
+      How many time steps to simulate:
+      <input type="number" min="100" step="100" value="100" id="duration">
     </p>
     <p>
      <label for="policy">Assign</label>
