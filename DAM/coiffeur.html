@@ -20,13 +20,8 @@
 	</style>
   </head>
   <body>
-    <h1>Whose turn is it? Is that someone's client?</h1>
-    <h2>Recommended readings</h2>
-    <p>
-      <ol>
-	<li>PENDING</li>
-      </ol>
-    </p>
+    <h1>Whose turn is it?</h1>
+    <h2>Is that someone's client?</h2>
 
     <p>
       How many coiffeurs work here:
@@ -49,7 +44,7 @@
     </p>    
     <p>
       How many time steps to simulate:
-      <input type="number" min="100" step="100" value="100" id="duration">
+      <input type="number" min="50" step="50" value="50" id="duration">
     </p>
     <p>
      <label for="policy">Assign</label>
@@ -58,19 +53,17 @@
        <option value="random">an unoccupied coiffeur at random</option>
        <option value="longest">the unoccupied coiffeur who has waited the longest</option>
      </select>
-    </p>
-    <p>
       <label for="retain">Keep the same coiffeur for all subsequent visits</label>
       <input type="checkbox" id="retain" name="retain" value="">
     </p>
     <p>
       <label for="churn">Churn time</label>
-      <input type="number" min="5" step="5" id="churn" value="15">
+      <input type="number" min="1" step="1" id="churn" value="3">
       (after how much waiting will a client leave)
     </p>
     <p>
       <label for="lounge">Capacity of waiting lounge</label>
-      <input type="number" min="0" step="1" id="lounge" value="5">
+      <input type="number" min="1" step="1" id="lounge" value="5">
       (how many people can stay waiting at any given time)
     </p>        
     
@@ -80,20 +73,22 @@
     <canvas id="draw" width="800" height="0"></canvas>
 
     <h2>Statistics</h2>
+    <h3>Coiffeur workload</h2>
 
      <table id="workerstats">
       <thead>
 	<tr>
 	  <th>Simulation</th>
 	  <th>Worker</th>
-	  <th>Idle time</th>
-	  <th>Clients served</th>
+	  <th colspan="2">Idle time</th>
+	  <th colspan="2">Busy time</th>	  
+	  <th colspan="2">Clients served</th>
       </tr>
       </thead>
       <tbody>
       </tbody>
     </table>
-
+    <h3>Client statistics</h3>
      <table id="clientstats">
       <thead>
 	<tr>

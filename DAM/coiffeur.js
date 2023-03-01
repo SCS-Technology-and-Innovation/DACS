@@ -27,14 +27,19 @@ let wait = null;
 function tickWorkers() {
     for (const c of workers) {
 	if (!!c.occupant) { // serving a client
-	    if (Math.random() < c.duration * servicerate) { // longer it's been happening, easier it concludes
+	    // the longer it's been happening, easier it concludes
+	    let done = Math.min(c.duration * servicerate, 1);
+	    console.log('Probability of conclusion for coiffeur', c.label, 'is', done);
+	    if (Math.random() < done) {
 		console.log('Coiffeur', c.label, 'finished serving client', c.occupant.label);
 		c.occupant = null;
 		c.served++;
+		c.duration = 0; // reset
 		satisfied++;
-		available.push(c.label); // go wait
+		available.push(c.label); // go wait for a client
 	    } else {
 		c.duration++; // progress
+		c.busy++; // working
 	    }
 	   
 	} else {
@@ -66,12 +71,16 @@ function tickLounge() {
 		if (i > -1) { // the preference is available
 		    available.splice(i, 1); // assign to this client
 		    chosen = workers[p];
-		}
+		    console.log('Coiffeur', p, 'is available');
+		} else {
+		    console.log('Coiffeur', p, 'is busy');
+		}		
 	    } else { // no preference
 		console.log('Client', c.label, 'has no preference');		
 		if (available.length > 0) { // idle coiffeurs
 		    if (ordered) {
 			chosen = workers[available.pop(0)]; // FIFO
+			console.log('Coiffeur', chosen.label, 'is up next');
 		    } else {
 			let r = [Math.floor(Math.random() * available.length)];
 			chosen = workers[available[r]];
@@ -84,13 +93,13 @@ function tickLounge() {
 		console.log('Client', c.label, 'in seat', s, 'is now getting served by coiffeur', chosen.label);		
 		loungechairs[s].occupant = null; // release the seat
 		chosen.occupant = c;
-		chosen.duration = 0; // just started
 		if (!preference.hasOwnProperty(c.label)) { // there was no preference set yet for this client
 		    preference[c.label] = chosen.label; // becomes a regular
 		}
 		discard.push(c);
 	    } else { // not getting served
-		c.waited++; 
+		c.waited++;
+		console.log('Client', c.label, 'waits some more');
 	    }
 	}
     }
@@ -104,7 +113,7 @@ function tickLounge() {
 }
 
 function setup() {
-    let w = 0.9 * window.innerWidth;
+    let w = 0.7 * window.innerWidth;
     let n = parseInt(document.getElementById('workers').value);
     workers = [];
     available = [];
@@ -113,6 +122,8 @@ function setup() {
 	let w = {};
 	w.occupant = null;
 	w.idle = 0;
+	w.busy = 0;
+	w.duration = 0;
 	w.served = 0;
 	w.label = i;
 	workers.push(w);
@@ -223,22 +234,52 @@ function average(v) {
     return sum / v.length;
 }
 
+/* 
+   adapted from 
+   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/max 
+*/
+function maximum(v) {
+    if (v.length == 0) {
+	return '';
+    } else if (v.length == 1) {
+	return v[0];
+    }
+    return v.reduce((a, b) => Math.max(a, b), -Infinity);   
+}
+
 function updateStats() {
     let ws = wt.getElementsByTagName('tbody')[0];
+    let ic = [];
+    let bc = [];
+    let sc = [];
     for (let i = 0; i < workers.length; i++) {
 	let w = workers[i];
+	ic.push(w.idle);
+	bc.push(w.busy);
+	sc.push(w.served);
 	let r = ws.rows[i];
 	r.cells[2].innerHTML = w.idle;
-	r.cells[3].innerHTML = w.served; 
+	if (i == 0) {
+	    r.cells[4].innerHTML = w.busy;
+	    r.cells[6].innerHTML = w.served;
+	} else {
+	    r.cells[3].innerHTML = w.busy;	    
+	    r.cells[4].innerHTML = w.served;
+	}
     }
+    let r = ws.rows[0];
+    r.cells[3].innerHTML = average(ic).toFixed(2);
+    r.cells[5].innerHTML = average(bc).toFixed(2);
+    r.cells[7].innerHTML = average(sc).toFixed(2);    
+    
     let cs = ct.getElementsByTagName('tbody')[0];
-    let r = cs.rows[0];
+    r = cs.rows[0];
     r.cells[1].innerHTML = satisfied;
     r.cells[2].innerHTML = impatient;
     r.cells[3].innerHTML = rejected;
     r.cells[4].innerHTML = average(wait).toFixed(2);
     r.cells[5].innerHTML = median(wait).toFixed(0);
-    r.cells[6].innerHTML = Math.max(wait);
+    r.cells[6].innerHTML = maximum(wait);
 }
 
 function data() {
@@ -248,25 +289,56 @@ function data() {
     for (let i = 0; i < workers.length; i++) {
 	let l = i + 1;
 	let row = tb.insertRow(i);
-	let slabel = row.insertCell(0);	
-	let wlabel = row.insertCell(1);	
-	let idle = row.insertCell(2);
-	let served = row.insertCell(3);
+	let slabel = row.insertCell(0);
 	slabel.innerHTML = 'Simulation ' + sc;
-	wlabel.innerHTML = 'Worker ' + l;
-	idle.innerHTML = "";
-	served.innerHTML = 0;
+	let wlabel = row.insertCell(1);
+	wlabel.innerHTML = 'Worker ' + l;	
+
+	let idleown = row.insertCell(2);
+	idleown.innerHTML = "";
+	let p = 3;
+	if (i == 0) {
+	    let idleavg = row.insertCell(p);
+	    p++;
+	    idleavg.innerHTML = "";	    
+	    let sl = 'ia' + sc;
+	    idleavg.id = sl;
+	    document.getElementById(sl).rowSpan = '"' + workers.length + '"';
+	}
+
+	let busyown = row.insertCell(p);
+	p++;
+	busyown.innerHTML = "";
+	if (i == 0) {
+	    let busyavg = row.insertCell(p);
+	    p++;
+	    busyavg.innerHTML = "";	    
+	    let sl = 'ba' + sc;
+	    busyavg.id = sl;
+	    document.getElementById(sl).rowSpan = '"' + workers.length + '"';
+	}
+
+	let servedown = row.insertCell(p);
+	servedown.innerHTML = 0;
+	p++;
+	if (i == 0) {
+	    let savg = row.insertCell(p);
+	    savg.innerHTML = "";	    
+	    let sl = 'sa' + sc;
+	    savg.id = sl;
+	    document.getElementById(sl).rowSpan = '"' + workers.length + '"';
+	}	
     }
 
     stat = ct.getElementsByTagName('tbody');    
     row = (stat[0]).insertRow(0);
     slabel = row.insertCell(0);	    
-    let s = row.insertCell(0);
-    let c = row.insertCell(0);
-    let l = row.insertCell(0);
-    let a = row.insertCell(0);
-    let me = row.insertCell(0);
-    let ma = row.insertCell(0);	
+    let s = row.insertCell(1);
+    let c = row.insertCell(2);
+    let l = row.insertCell(3);
+    let a = row.insertCell(4);
+    let me = row.insertCell(5);
+    let ma = row.insertCell(6);	
     slabel.innerHTML = 'Simulation ' + sc;
     s.innerHTML = 0;
     c.innerHTML = 0;
@@ -275,11 +347,6 @@ function data() {
     me.innerHTML = '';
     ma.innerHTML = '';
 
-    row = tb.insertRow(workers.length);
-    let sep = row.insertCell(0);
-    let sl = 'sep' + sc;
-    sep.id = sl;
-    document.getElementById(sl).colSpan = "5";
     sc++; // new stats
 }
 
@@ -364,8 +431,8 @@ function simulate() {
     } else {
 	console.log('Customers do not care which coiffeur serves them');
     }
-    arrivalrate = parseInt(document.getElementById('arrivalrate').value) / 20;
-    servicerate = parseInt(document.getElementById('servicerate').value) / 50;
+    arrivalrate = parseInt(document.getElementById('arrivalrate').value) / 10;
+    servicerate = parseInt(document.getElementById('servicerate').value) / 100;
     speed = 100 + (100 - parseInt(document.getElementById('speed').value)) * 10;
     impatient = 0;
     rejected = 0;
