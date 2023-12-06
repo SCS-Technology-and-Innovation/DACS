@@ -1,2 +1,3 @@
 # DACS
-Data Analysis for Complex Systems
+
+Course materials for the Graduate Certificate *Data Analysis for Complex Systems*
